@@ -1,0 +1,98 @@
+#Cumulative prospect theory hierarchical implementation
+model {
+  for (j in 1:nSubj) {  #Subject-loop
+    ##PRIORS
+    #Value function 
+    alpha.phi[j] ~ dnorm(mu.phi.alpha, tau.phi.alpha)T(-5,5)
+    alpha[j] <- phi(alpha.phi[j])*2 #range 0 to 2        
+    
+    lambda[j] <- 1
+
+    #Probability weighting function		
+    gamma.phi[j] ~ dnorm(mu.phi.gamma, tau.phi.gamma)T(-5,5)
+    gamma[j] <- phi(gamma.phi[j])*2 #range 0 to 2
+
+    delta.loss.phi[j] ~ dnorm(mu.phi.delta.loss, tau.phi.delta.loss)T(-5,5) 
+    delta.loss.pre[j] <- phi(delta.loss.phi[j])
+    delta.loss[j] <- delta.loss.pre[j]*5
+
+    #Choice rule
+    theta.phi[j] ~ dnorm(mu.phi.theta, tau.phi.theta)T(-5,5) 
+    theta.pre[j] <- phi(theta.phi[j])
+    theta[j] <- theta.pre[j]*5
+ 
+  }
+
+  ##PRIORS FOR GROUP DISTRIBUTIONS
+  #Value function
+  mu.phi.alpha ~ dnorm(0,1) 
+  sigma.phi.alpha ~ dunif(0,10)
+  tau.phi.alpha <- pow(sigma.phi.alpha,-2)
+
+  #Probability weighting function
+  mu.phi.gamma ~ dnorm(0,1) 
+  sigma.phi.gamma ~ dunif(0,10)
+  tau.phi.gamma <- pow(sigma.phi.gamma,-2)
+
+  mu.phi.delta.loss ~ dnorm(0,1) 
+  sigma.phi.delta.loss ~ dunif(0,10)
+  tau.phi.delta.loss <- pow(sigma.phi.delta.loss,-2)
+	  
+  #Choice rule
+  mu.phi.theta ~ dnorm(0,1) 
+  sigma.phi.theta ~ dunif(0,10)
+  tau.phi.theta <- pow(sigma.phi.theta,-2)
+
+
+  # To obtain the mean of the hyperdistribution on the desired scale
+  mu.alpha <- phi(mu.phi.alpha)*2
+  mu.gamma <- phi(mu.phi.gamma)*2 
+  mu.delta.loss <- phi(mu.phi.delta.loss)*5  
+  mu.theta <- phi(mu.phi.theta)*5
+  gamma.gain <- gamma
+  gamma.loss <- gamma
+
+  for (j in 1:nSubj) {  #Subject-loop
+   		
+    #-------------------------
+    #NEGATIVE LOTTERY
+    for (i in 1:nItems) { # Item-Loop
+
+      #Value function
+      #Lottery A
+      v.1.a[i,j] <- lambda[j]*(-1) * pow((-1 * prospectsA[i,1,j]),alpha[j])       
+      v.2.a[i,j] <- lambda[j]*(-1) * pow((-1 * prospectsA[i,3,j]),alpha[j])
+      v.3.a[i,j] <- lambda[j]*(-1) * pow((-1 * prospectsA[i,5,j]),alpha[j])
+
+      #Lottery B	
+      v.1.b[i,j] <- lambda[j]*(-1) * pow((-1 * prospectsB[i,1,j]),alpha[j])       
+      v.2.b[i,j] <- lambda[j]*(-1) * pow((-1 * prospectsB[i,3,j]),alpha[j]) 
+      v.3.b[i,j] <- lambda[j]*(-1) * pow((-1 * prospectsB[i,5,j]),alpha[j]) 
+		
+      #Weighting function
+      #Lottery A
+      w.1.a[i,j] <- (delta.loss[j]*pow(cumprobsA[i,3],gamma.loss[j])/ (delta.loss[j]*pow(cumprobsA[i,3],gamma.loss[j])+pow((1-cumprobsA[i,3]),gamma.loss[j]))) - (delta.loss[j]*pow(cumprobsA[i,4],gamma.loss[j])/ (delta.loss[j]*pow(cumprobsA[i,4],gamma.loss[j])+pow((1-cumprobsA[i,4]),gamma.loss[j])))
+      w.2.a[i,j] <- (delta.loss[j]*pow(cumprobsA[i,4],gamma.loss[j])/ (delta.loss[j]*pow(cumprobsA[i,4],gamma.loss[j])+pow((1-cumprobsA[i,4]),gamma.loss[j]))) - (delta.loss[j]*pow(cumprobsA[i,5],gamma.loss[j])/ (delta.loss[j]*pow(cumprobsA[i,5],gamma.loss[j])+pow((1-cumprobsA[i,5]),gamma.loss[j])))
+      w.3.a[i,j] <- (delta.loss[j]*pow(cumprobsA[i,5],gamma.loss[j])/ (delta.loss[j]*pow(cumprobsA[i,5],gamma.loss[j])+pow((1-cumprobsA[i,5]),gamma.loss[j])))   
+
+      #Lottery B
+      w.1.b[i,j] <- (delta.loss[j]*pow(cumprobsB[i,3],gamma.loss[j])/ (delta.loss[j]*pow(cumprobsB[i,3],gamma.loss[j])+pow((1-cumprobsB[i,3]),gamma.loss[j]))) - (delta.loss[j]*pow(cumprobsB[i,4],gamma.loss[j])/ (delta.loss[j]*pow(cumprobsB[i,4],gamma.loss[j])+pow((1-cumprobsB[i,4]),gamma.loss[j])))
+      w.2.b[i,j] <- (delta.loss[j]*pow(cumprobsB[i,4],gamma.loss[j])/ (delta.loss[j]*pow(cumprobsB[i,4],gamma.loss[j])+pow((1-cumprobsB[i,4]),gamma.loss[j]))) - (delta.loss[j]*pow(cumprobsB[i,5],gamma.loss[j])/ (delta.loss[j]*pow(cumprobsB[i,5],gamma.loss[j])+pow((1-cumprobsB[i,5]),gamma.loss[j])))
+      w.3.b[i,j] <- (delta.loss[j]*pow(cumprobsB[i,5],gamma.loss[j])/ (delta.loss[j]*pow(cumprobsB[i,5],gamma.loss[j])+pow((1-cumprobsB[i,5]),gamma.loss[j])))   
+ 
+      #Valuation 	
+      Vf.a[i,j]  <- w.1.a[i,j] * v.1.a[i,j] + w.2.a[i,j] * v.2.a[i,j] + w.3.a[i,j] * v.3.a[i,j] 
+      Vf.b[i,j]  <- w.1.b[i,j] * v.1.b[i,j] + w.2.b[i,j] * v.2.b[i,j] + w.3.b[i,j] * v.3.b[i,j]
+   	
+      #Choice rule
+      #binval[i,j] <- (1/(1+exp((-1*theta[j])*(Vf.a[i,j]-Vf.b[i,j]))))
+      binval[i,j] <- 1/(1+exp(-1*(Vf.a[i,j]-Vf.b[i,j])/(theta[j])))
+      #binval[i,j] <- 1/(1+exp(-1*(Vf.a[i,j]-Vf.b[i,j])/theta[j]))
+      #binval[i,j] <- 1/(1+exp((-1*theta[j])*pow((Vf.a[i,j]-Vf.b[i,j]), 1/alpha[j])))
+      #binval[i,j] <- 1/(1+exp((-1*theta[j])*(-1*abs(Vf.a[i,j])^(1/alpha[j])--1*abs(Vf.b[i,j])^(1/alpha[j]))))
+      choices[i,j] ~ dbern(binval[i,j])
+      choicespred[i,j] ~ dbern(binval[i,j])
+
+    }
+  }   
+}
