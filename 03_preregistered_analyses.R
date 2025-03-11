@@ -42,9 +42,25 @@ dqsum<-summarySE(choice_eval_wtp_all, measurevar="EVchoice", groupvars=c("group"
 dqsumage<-summarySE(choice_eval_wtp_all, measurevar="EVchoice", groupvars= "group", na.rm = TRUE)
 dqsumtype<-summarySE(choice_eval_wtp_all, measurevar="EVchoice", groupvars="type", na.rm = TRUE)
 
-##line graph of probability of choosing the higher expected value choice by age group and gamble type with 95% CI bars
-ggplot(dqsum, aes(x=type, y=EVchoice, color=group))+ geom_point() + geom_errorbar(aes(ymin=EVchoice-ci, ymax=EVchoice+ci, width=.1))+ ylim(.6,1)
 
+
+##graph of probability of choosing the higher expected value choice by age group and gamble type with 95% CI bars
+dqsum[dqsum == 'old'] <- 'Older Adults'
+dqsum[dqsum == 'young'] <- 'Younger Adults'
+dqsum$group<-factor(dqsum$group, levels=c("Younger Adults", "Older Adults"))
+dqsum$type<-factor(dqsum$type, levels=c("monchoice", "medchoice"))
+
+ggplot(dqsum, aes(x=group, y=EVchoice, fill=type))+ 
+  geom_bar(stat="identity", position= "dodge")+ 
+  coord_cartesian(ylim = c(.6,.9)) + 
+  geom_errorbar(aes(ymin=EVchoice-se, ymax=EVchoice+se), width=.2, position=position_dodge(.9)) +
+  scale_fill_discrete(labels = c("Affect-Poor", "Affect-Rich"), type= c("blue", "red")) + theme_apa()+
+  theme(plot.title = element_text(hjust = 0.5)) + theme(text= element_text(size=22), legend.position = "bottom") +
+  labs(title= "Decision Quality", x = NULL, y= "Probability of Choosing the Better Option", fill = NULL)
+
+
+bar<-table(choice_eval_wtp_all$group, choice_eval_wtp_all$EVchoice)
+barplot(bar)
 
 #PREREGISTERED: compare probability of choosing higher coefficient of variance (risk attitudes)
 #run logistic regression
@@ -75,3 +91,18 @@ rasumtype<-summarySE(choice_eval_wtp_all, measurevar="CVchoice", groupvars="type
 
 ##line graph of probability of choosing the riskier choice by age group and gamble type with 95% CI bars
 ggplot(rasum, aes(x=type, y=CVchoice, color=group))+ geom_point() + geom_errorbar(aes(ymin=CVchoice-ci, ymax=CVchoice+ci, width=.1))+ ylim(.35,.75)
+rasum$group
+
+rasum[rasum == 'old'] <- 'Older Adults'
+rasum[rasum == 'young'] <- 'Younger Adults'
+rasum$group<-factor(rasum$group, levels=c("Younger Adults", "Older Adults"))
+rasum$type<-factor(rasum$type, levels=c("monchoice", "medchoice"))
+
+ggplot(rasum, aes(x=group, y=CVchoice, fill=type))+ 
+  geom_bar(stat="identity", position= "dodge")+ 
+  coord_cartesian(ylim = c(.2,.9)) + 
+  geom_errorbar(aes(ymin=CVchoice-se, ymax=CVchoice+se), width=.2, position=position_dodge(.9)) +
+  scale_fill_discrete(labels = c("Affect-Poor", "Affect-Rich"), type= c("blue", "red")) + theme_apa()+
+  theme(plot.title = element_text(hjust = 0.5)) + theme(text= element_text(size=22), legend.position = "bottom") +
+  labs(title= "Risk Aversion", x = NULL, y= "Probability of Choosing the Riskier Option", fill = NULL)
+
